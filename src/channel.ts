@@ -51,6 +51,70 @@ export interface FeishuAccount extends ChannelAccount {
   tokenExpiry?: number;
 }
 
+export interface FeishuEvent {
+  event_id: string;
+  event_type: string;
+  create_time: string;
+  token: string;
+  app_id: string;
+  tenant_key: string;
+}
+
+// Pairing state storage interface
+interface PairingState {
+  pendingUsers: Set<string>; // Users waiting for approval
+  pairedUsers: Set<string>;  // Users who are approved
+  allowlist: Set<string>;    // Users in allowlist (auto-approved)
+}
+
+// Create pairing state manager
+function createPairingManager(config: FeishuConfig): PairingState {
+  const state: PairingState = {
+    pendingUsers: new Set(),
+    pairedUsers: new Set(),
+    allowlist: new Set(),
+  };
+
+  // Load allowlist from config
+  const allowlist = config.channels?.feishu?.accounts?.default?.allowlist || [];
+  if (Array.isArray(allowlist)) {
+    allowlist.forEach(id => state.allowlist.add(id));
+  }
+
+  return state;
+}
+
+// Check if user is allowed to interact
+function checkPairingPolicy(
+  userId: string,
+  policy: "pairing" | "open" | "allowlist",
+  state: PairingState
+): { allowed: boolean; reason: "pending" | "denied" | "allowed" } {
+  if (policy === "open") {
+    return { allowed: true, reason: "allowed" };
+  }
+  
+  if (policy === "allowlist") {
+    if (state.allowlist.has(userId) || state.pairedUsers.has(userId)) {
+      return { allowed: true, reason: "allowed" };
+    }
+    return { allowed: false, reason: "pending" };
+  }
+  
+  // pairing policy
+  if (state.pairedUsers.has(userId)) {
+    return { allowed: true, reason: "allowed" };
+  }
+  if (state.allowlist.has(userId)) {
+    state.pairedUsers.add(userId);
+    return { allowed: true, reason: "allowed" };
+  }
+  if (!state.pendingUsers.has(userId)) {
+    state.pendingUsers.add(userId);
+  }
+  return { allowed: false, reason: "pending" };
+}
+
 // Capabilities
 const capabilities: ChannelCapabilities = {
   chatTypes: ["direct", "group"],
@@ -149,13 +213,7 @@ export function parseFeishuMessage(
     const content = JSON.parse(msg.content);
     text = content.text || "";
   } catch {
-    // For non-text messages, use message_type as fallback
     text = `[${msg.message_type}]`;
-  }
-
-  // Check if @mention is required and present
-  if (msg.chat_type === "group") {
-    // TODO: Check for @mention in text
   }
 
   return {
@@ -172,6 +230,81 @@ export function parseFeishuMessage(
     replyToId: msg.root_id || msg.parent_id,
     raw: msg,
   };
+}
+
+// Helper to format text as Feishu card
+function formatAsCard(text: string): string {
+  return JSON.stringify({
+    msg_type: "interactive",
+    card: {
+      config: {
+        wide_screen_mode: true,
+      },
+      elements: [
+        {
+          tag: "div",
+          text: {
+            tag: "plain_text",
+            content: text,
+          },
+        },
+      ],
+    },
+  });
+}
+
+// Helper to render markdown as card
+function renderMarkdownCard(text: string): string {
+  const lines = text.split("\n");
+  const elements: any[] = [];
+
+  for (const line of lines) {
+    if (line.startsWith("```")) {
+      continue;
+    } else if (line.startsWith("#")) {
+      elements.push({
+        tag: "div",
+        text: {
+          tag: "lark_md",
+          content: line,
+        },
+      });
+    } else if (line.startsWith("- ") || line.startsWith("* ")) {
+      elements.push({
+        tag: "div",
+        text: {
+          tag: "lark_md",
+          content: line,
+        },
+      });
+    } else if (line.match(/^\d+\./)) {
+      elements.push({
+        tag: "div",
+        text: {
+          tag: "lark_md",
+          content: line,
+        },
+      });
+    } else {
+      elements.push({
+        tag: "div",
+        text: {
+          tag: "lark_md",
+          content: line,
+        },
+      });
+    }
+  }
+
+  return JSON.stringify({
+    msg_type: "interactive",
+    card: {
+      config: {
+        wide_screen_mode: true,
+      },
+      elements,
+    },
+  });
 }
 
 // Outbound adapter
@@ -197,6 +330,25 @@ export const outbound: OutboundAdapter<FeishuConfig, FeishuAccount> = {
       const recipientId = context.recipientId ?? context.conversationId;
       const receiveIdType = context.conversationType === "group" ? "chat_id" : "open_id";
 
+      let msgType = "text";
+      let content: string;
+
+      const renderMode = config.channels?.feishu?.renderMode || "auto";
+      
+      if (renderMode === "card") {
+        msgType = "interactive";
+        content = renderMarkdownCard(text);
+      } else if (renderMode === "auto") {
+        if (text.includes("```") || text.includes("|")) {
+          msgType = "interactive";
+          content = renderMarkdownCard(text);
+        } else {
+          content = JSON.stringify({ text });
+        }
+      } else {
+        content = JSON.stringify({ text });
+      }
+
       const url = `https://${domain}/open-apis/im/v1/messages?receive_id_type=${receiveIdType}`;
 
       const response = await fetch(url, {
@@ -207,8 +359,8 @@ export const outbound: OutboundAdapter<FeishuConfig, FeishuAccount> = {
         },
         body: JSON.stringify({
           receive_id: recipientId,
-          msg_type: "text",
-          content: JSON.stringify({ text }),
+          msg_type: msgType,
+          content,
         }),
       });
 
@@ -238,10 +390,8 @@ export const outbound: OutboundAdapter<FeishuConfig, FeishuAccount> = {
       const recipientId = context.recipientId ?? context.conversationId;
       const receiveIdType = context.conversationType === "group" ? "chat_id" : "open_id";
 
-      // Step 1: Upload image/file
       const uploadUrl = `https://${domain}/open-apis/im/v1/images`;
 
-      // For file upload, we need to read the file first
       const fileContent = await fetch(media.file).then(r => r.arrayBuffer());
       const blob = new Blob([fileContent], { type: media.mimeType || "application/octet-stream" });
 
@@ -268,7 +418,6 @@ export const outbound: OutboundAdapter<FeishuConfig, FeishuAccount> = {
 
       const imageKey = uploadData.data?.image_key;
 
-      // Step 2: Send message with image
       const sendUrl = `https://${domain}/open-apis/im/v1/messages?receive_id_type=${receiveIdType}`;
 
       const sendResponse = await fetch(sendUrl, {
@@ -304,12 +453,18 @@ export function createWebSocketInbound(): InboundAdapter<FeishuConfig, FeishuAcc
   let handleMessageFn: ((msg: InboundMessage) => void) | null = null;
   let handleEventFn: ((event: any) => void) | null = null;
   let handleStatusFn: ((status: { status: string }) => void) | null = null;
+  let currentAccount: FeishuAccount | null = null;
+  let currentConfig: FeishuConfig | null = null;
+  let pairingState: PairingState | null = null;
 
   async function connect(account: FeishuAccount, config: FeishuConfig) {
+    currentAccount = account;
+    currentConfig = config;
+    pairingState = createPairingManager(config);
+
     const domain = account.domain === "feishu" ? "open.feishu.cn" : "open.larksuite.com";
     const token = await getTenantAccessToken(account);
 
-    // Connect to WebSocket
     const wsUrl = `wss://${domain}/open-apis/im/v1/messages?token=${token}`;
     ws = new WebSocket(wsUrl);
 
@@ -318,18 +473,39 @@ export function createWebSocketInbound(): InboundAdapter<FeishuConfig, FeishuAcc
       console.log("[feishu] WebSocket connected");
     };
 
-    ws.onmessage = (event) => {
+    ws.onmessage = async (event) => {
       try {
         const data = JSON.parse(event.data);
         
         if (data.event && data.event.message) {
-          // Handle message event
           const msg = parseFeishuMessage(data.event.message, account);
           if (msg) {
+            // Check pairing policy for DMs
+            if (msg.conversationType === "direct") {
+              const policy = config.channels?.feishu?.dmPolicy || "pairing";
+              const check = checkPairingPolicy(msg.sender.id, policy, pairingState!);
+              
+              if (!check.allowed && check.reason === "pending") {
+                // Send pairing request message
+                const user = await getUserInfo(account, msg.sender.id);
+                const userName = user?.name || msg.sender.name;
+                await outbound.sendText({
+                  account,
+                  config,
+                  text: `你好 ${userName}！我是 Cas，你的 AI 助理。\n\n请发送 "/approve ${msg.sender.id}" 来批准此用户的请求。`,
+                  context: {
+                    conversationId: msg.conversationId,
+                    conversationType: "direct",
+                    recipientId: msg.sender.id,
+                  },
+                });
+                return; // Don't forward message to agent
+              }
+            }
+            
             handleMessageFn?.(msg);
           }
         } else if (data.event) {
-          // Handle other events
           handleEventFn?.(data.event);
         }
       } catch (error) {
@@ -341,10 +517,11 @@ export function createWebSocketInbound(): InboundAdapter<FeishuConfig, FeishuAcc
       handleStatusFn?.({ status: "disconnected" });
       console.log("[feishu] WebSocket disconnected, reconnecting...");
       
-      // Reconnect after 5 seconds
-      reconnectTimeout = setTimeout(() => {
-        connect(account, config);
-      }, 5000);
+      if (currentAccount && currentConfig) {
+        reconnectTimeout = setTimeout(() => {
+          connect(currentAccount!, currentConfig!);
+        }, 5000);
+      }
     };
 
     ws.onerror = (error) => {
@@ -378,8 +555,6 @@ export function createWebSocketInbound(): InboundAdapter<FeishuConfig, FeishuAcc
     },
 
     async verifySignature(payload: string, signature: string, timestamp: string): Promise<boolean> {
-      // Verify webhook signature if encryption is enabled
-      // This is for webhook mode, not WebSocket
       return true;
     },
   };
@@ -391,6 +566,107 @@ export function createWebhookInbound(): InboundAdapter<FeishuConfig, FeishuAccou
   let handleMessageFn: ((msg: InboundMessage) => void) | null = null;
   let handleEventFn: ((event: any) => void) | null = null;
   let handleStatusFn: ((status: { status: string }) => void) | null = null;
+  let currentAccount: FeishuAccount | null = null;
+  let currentConfig: FeishuConfig | null = null;
+  let pairingState: PairingState | null = null;
+
+  async function startHttpServer(account: FeishuAccount, config: FeishuConfig) {
+    currentAccount = account;
+    currentConfig = config;
+    pairingState = createPairingManager(config);
+
+    const http = require("http");
+    const port = process.env.FEISHU_WEBHOOK_PORT || 8080;
+
+    server = http.createServer(async (req: any, res: any) => {
+      if (req.method === "POST" && req.url === "/webhook") {
+        let body = "";
+        req.on("data", (chunk: Buffer) => {
+          body += chunk.toString();
+        });
+        req.on("end", async () => {
+          try {
+            const data = JSON.parse(body);
+            
+            if (config.verificationToken) {
+              const timestamp = req.headers["x-feishu-request-timestamp"] || "";
+              const signature = req.headers["x-feishu-signature"] || "";
+              
+              const crypto = require("crypto");
+              const sign = crypto
+                .createHmac("sha256", config.verificationToken)
+                .update(timestamp + config.verificationToken)
+                .digest("base64");
+
+              if (signature !== sign) {
+                console.error("[feishu] Invalid webhook signature");
+                res.writeHead(401);
+                res.end("Invalid signature");
+                return;
+              }
+            }
+
+            if (data.type === "url_verification") {
+              res.writeHead(200);
+              res.end(JSON.stringify({ challenge: data.challenge }));
+              return;
+            }
+
+            if (data.event) {
+              if (data.event.message) {
+                const msg = parseFeishuMessage(data.event.message, account);
+                if (msg) {
+                  // Check pairing policy for DMs
+                  if (msg.conversationType === "direct") {
+                    const policy = config.channels?.feishu?.dmPolicy || "pairing";
+                    const check = checkPairingPolicy(msg.sender.id, policy, pairingState!);
+                    
+                    if (!check.allowed && check.reason === "pending") {
+                      const user = await getUserInfo(account, msg.sender.id);
+                      const userName = user?.name || msg.sender.name;
+                      await outbound.sendText({
+                        account,
+                        config,
+                        text: `你好 ${userName}！我是 Cas，你的 AI 助理。\n\n请发送 "/approve ${msg.sender.id}" 来批准此用户的请求。`,
+                        context: {
+                          conversationId: msg.conversationId,
+                          conversationType: "direct",
+                          recipientId: msg.sender.id,
+                        },
+                      });
+                      res.writeHead(200);
+                      res.end("OK");
+                      return;
+                    }
+                  }
+                  handleMessageFn?.(msg);
+                }
+              } else {
+                handleEventFn?.(data.event);
+              }
+            }
+
+            res.writeHead(200);
+            res.end("OK");
+          } catch (error) {
+            console.error("[feishu] Webhook error:", error);
+            res.writeHead(500);
+            res.end("Error");
+          }
+        });
+      } else {
+        res.writeHead(404);
+        res.end("Not found");
+      }
+    });
+
+    await new Promise<void>((resolve) => {
+      server.listen(port, () => {
+        console.log(`[feishu] Webhook server listening on port ${port}`);
+        resolve();
+      });
+    });
+  }
 
   return {
     capabilities,
@@ -400,28 +676,34 @@ export function createWebhookInbound(): InboundAdapter<FeishuConfig, FeishuAccou
       handleEventFn = handleEvent;
       handleStatusFn = handleStatus;
 
-      // Webhook mode requires an HTTP server
-      // This would be implemented using a library like fastify or express
-      // For now, this is a placeholder
-      
-      console.log("[feishu] Webhook mode requires HTTP server setup");
+      const feishuAccount = outbound.resolveAccount(config, "default");
+      await startHttpServer(feishuAccount, config);
+
       handleStatus({ status: "ready" });
     },
 
     async stop() {
       if (server) {
-        await server.close();
+        await new Promise<void>((resolve) => {
+          server.close(() => resolve());
+        });
         server = null;
       }
     },
 
     async verifySignature(payload: string, signature: string, timestamp: string): Promise<boolean> {
-      // Signature verification is handled by the HTTP server
-      // For webhook mode, pass config to verify in the server handler
       return true;
     },
   };
 }
 
-// Export combined inbound adapter
+// Export inbound adapter based on connection mode
+export function createInboundAdapter(mode: "websocket" | "webhook" = "websocket"): InboundAdapter<FeishuConfig, FeishuAccount> {
+  if (mode === "webhook") {
+    return createWebhookInbound();
+  }
+  return createWebSocketInbound();
+}
+
+// Default export
 export const inbound = createWebSocketInbound();

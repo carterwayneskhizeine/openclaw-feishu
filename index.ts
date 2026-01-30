@@ -1,5 +1,5 @@
 import type { OpenClawApi } from "openclaw";
-import { outbound } from "./src/channel.js";
+import { outbound, inbound, createInboundAdapter, type FeishuConfig } from "./src/channel.js";
 
 // Feishu channel plugin for OpenClaw
 export default function registerFeishuPlugin(api: OpenClawApi) {
@@ -34,6 +34,10 @@ export default function registerFeishuPlugin(api: OpenClawApi) {
           },
       },
       outbound,
+      inbound: createInboundAdapter("websocket"), // Default to WebSocket
     },
   });
 }
+
+// Re-export for external use
+export { outbound, inbound, createInboundAdapter, type FeishuConfig };

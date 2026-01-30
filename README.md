@@ -11,6 +11,7 @@
 ### ✅ Implemented
 
 - **WebSocket connection mode** - Receive events via WebSocket long connection
+- **Webhook connection mode** - HTTP webhook receiver with signature verification
 - **Direct messages (DM)** - Send and receive DMs
 - **Group chats** - Send and receive group messages
 - **Text messages** - Send and receive text messages
@@ -18,17 +19,16 @@
 - **Message replies** - Reply to messages with context
 - **@mention support** - Require mentions in group chats
 - **User info** - Fetch user display names
+- **Pairing flow** - DM approval workflow (pairing/open/allowlist policies)
+- **Markdown card rendering** - Auto-detect code blocks and tables
 
 ### 🔄 In Progress
 
-- **Webhook mode** - HTTP webhook receiver
-- **Markdown card rendering** - Rich message format
-- **Pairing flow** - DM approval workflow
+- **Event handling** - Bot added/removed events
 - **Reactions** - Message reactions support
 
 ### 📋 Planned
 
-- **Event handling** - Bot added/removed events
 - **Typing indicator** - Show "bot is typing"
 - **Message read receipts** - Track message read status
 
