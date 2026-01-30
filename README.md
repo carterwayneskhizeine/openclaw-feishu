@@ -114,18 +114,20 @@ Add to your OpenClaw configuration (`~/.openclaw/openclaw.json`):
 
 ```json
 {
-  "channels": {
-    "feishu": {
-      "enabled": true,
-      "appId": "your_app_id",
-      "appSecret": "your_app_secret",
-      "domain": "feishu",
-      "connectionMode": "websocket",
-      "dmPolicy": "pairing",
-      "groupPolicy": "allowlist",
-      "requireMention": true,
-      "mediaMaxMb": 30,
-      "renderMode": "auto"
+  "plugins": {
+    "entries": {
+      "feishu": {
+        "enabled": true,
+        "appId": "your_app_id",
+        "appSecret": "your_app_secret",
+        "domain": "feishu",
+        "connectionMode": "websocket",
+        "dmPolicy": "pairing",
+        "groupPolicy": "allowlist",
+        "requireMention": true,
+        "mediaMaxMb": 30,
+        "renderMode": "auto"
+      }
     }
   }
 }
