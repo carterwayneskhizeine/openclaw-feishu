@@ -2,18 +2,37 @@
 
 [![NPM Version](https://img.shields.io/npm/v/@openclaw/feishu)](https://www.npmjs.com/package/@openclaw/feishu)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![OpenClaw Version](https://img.shields.io/badge/OpenClaw-2026.1+-blue)](https://github.com/openclaw/openclaw)
 
 飞书/Lark channel plugin for [OpenClaw](https://github.com/openclaw/openclaw).
 
 ## Features
 
-- **WebSocket and Webhook connection modes** - Choose your preferred way to receive events
-- **Direct messages and group chats** - Support for both DM and group conversations
-- **Message replies** - Reply to messages with proper context
-- **Media support** - Send and receive images and files
-- **Markdown rendering** - Optional card render mode with syntax highlighting
-- **Pairing flow** - DM approval process for security
+### ✅ Implemented
+
+- **WebSocket connection mode** - Receive events via WebSocket long connection
+- **Direct messages (DM)** - Send and receive DMs
+- **Group chats** - Send and receive group messages
+- **Text messages** - Send and receive text messages
+- **Media messages** - Send images and files
+- **Message replies** - Reply to messages with context
 - **@mention support** - Require mentions in group chats
+- **User info** - Fetch user display names
+
+### 🔄 In Progress
+
+- **Webhook mode** - HTTP webhook receiver
+- **Markdown card rendering** - Rich message format
+- **Pairing flow** - DM approval workflow
+- **Reactions** - Message reactions support
+
+### 📋 Planned
+
+- **Event handling** - Bot added/removed events
+- **Typing indicator** - Show "bot is typing"
+- **Message read receipts** - Track message read status
+
+## Installation
 
 ## Installation
 
