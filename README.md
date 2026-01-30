@@ -1,116 +1,116 @@
-# OpenClaw Feishu/Lark Plugin
+# OpenClaw 飞书/Lark 插件
+
+[English](README_EN.md)
 
 [![NPM Version](https://img.shields.io/npm/v/@openclaw/feishu)](https://www.npmjs.com/package/@openclaw/feishu)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![OpenClaw Version](https://img.shields.io/badge/OpenClaw-2026.1+-blue)](https://github.com/openclaw/openclaw)
 
-飞书/Lark channel plugin for [OpenClaw](https://github.com/openclaw/openclaw).
+[OpenClaw](https://github.com/openclaw/openclaw) 的飞书/Lark 渠道插件。
 
-## Features
+## 功能特性
 
-### ✅ Implemented
+### ✅ 已实现
 
-- **WebSocket connection mode** - Receive events via WebSocket long connection
-- **Webhook connection mode** - HTTP webhook receiver with signature verification
-- **Direct messages (DM)** - Send and receive DMs
-- **Group chats** - Send and receive group messages
-- **Text messages** - Send and receive text messages
-- **Media messages** - Send images and files
-- **Message replies** - Reply to messages with context
-- **@mention support** - Require mentions in group chats
-- **User info** - Fetch user display names
-- **Pairing flow** - DM approval workflow (pairing/open/allowlist policies)
-- **Markdown card rendering** - Auto-detect code blocks and tables
+- **WebSocket 连接模式** - 通过 WebSocket 长连接接收事件
+- **Webhook 连接模式** - 支持签名验证的 HTTP Webhook 接收器
+- **私聊消息（DM）** - 收发私聊消息
+- **群组聊天** - 收发群组消息
+- **文本消息** - 收发文本消息
+- **媒体消息** - 发送图片和文件
+- **消息回复** - 带上下文的消息回复
+- **@提及支持** - 群聊中支持 @提及触发
+- **用户信息** - 获取用户显示名称
+- **配对流程** - 私聊审批工作流（配对/开放/白名单策略）
+- **Markdown 卡片渲染** - 自动识别代码块和表格
 
-### 🔄 In Progress
+### 🔄 开发中
 
-- **Event handling** - Bot added/removed events
-- **Reactions** - Message reactions support
+- **事件处理** - 机器人被添加/移除事件
+- **表情反应** - 消息表情反应支持
 
-### 📋 Planned
+### 📋 计划中
 
-- **Typing indicator** - Show "bot is typing"
-- **Message read receipts** - Track message read status
+- **输入指示器** - 显示“机器人正在输入”
+- **消息已读回执** - 跟踪消息已读状态
 
-## Installation
+## 安装
 
-## Installation
-
-### Method 1: Install from npm (recommended)
+### 方法 1：通过 npm 安装（推荐）
 
 ```bash
 openclaw plugins install @openclaw/feishu
 ```
 
-### Method 2: Install from source
+### 方法 2：从源码安装
 
 ```bash
-# Clone and install dependencies
+# 克隆仓库并安装依赖
 git clone https://github.com/yourusername/openclaw-feishu.git
 cd openclaw-feishu
 npm install
 
-# Build
+# 构建
 npm run build
 
-# Install the plugin
+# 安装插件
 openclaw plugins install ./dist
 ```
 
-### Method 3: Manual installation
+### 方法 3：手动安装
 
 ```bash
-# Download the plugin
+# 创建插件目录
 mkdir -p ~/.openclaw/extensions/feishu
 cd ~/.openclaw/extensions/feishu
 
-# Copy plugin files here
+# 将插件文件复制至此目录
 ```
 
-## Configuration
+## 配置
 
-### Step 1: Create a Feishu Open Platform App
+### 步骤 1：创建飞书开放平台应用
 
-1. Go to [Feishu Open Platform](https://open.feishu.cn) (国内) or [Lark Developer Console](https://developer.larksuite.com) (国际)
-2. Create a new self-built app
-3. Get your App ID and App Secret from the Credentials page
+1. 访问 [飞书开放平台](https://open.feishu.cn)（国内）或 [Lark Developer Console](https://developer.larksuite.com)（国际版）
+2. 创建一个新的自建应用
+3. 在凭证页面获取 App ID 和 App Secret
 
-### Step 2: Enable Required Permissions
+### 步骤 2：启用所需权限
 
-Go to **Permissions** in your app settings and enable:
+在应用设置的 **权限管理** 中启用以下权限：
 
-| Permission | Scope | Description |
-|------------|-------|-------------|
-| `im:message` | Messaging | Send and receive messages |
-| `im:message.p2p_msg:readonly` | DM | Read direct messages to bot |
-| `im:message.group_at_msg:readonly` | Group | Receive @mention messages in groups |
-| `im:message:send_as_bot` | Send | Send messages as the bot |
-| `im:resource` | Media | Upload and download images/files |
-| `contact:user.base:readonly` | User Info | Get basic user info |
+| 权限 | 范围 | 说明 |
+|------|------|------|
+| `im:message` | 消息 | 收发消息 |
+| `im:message.p2p_msg:readonly` | 私聊 | 读取发送给机器人的私聊消息 |
+| `im:message.group_at_msg:readonly` | 群组 | 接收群组中的 @提及消息 |
+| `im:message:send_as_bot` | 发送 | 以机器人身份发送消息 |
+| `im:resource` | 媒体 | 上传和下载图片/文件 |
+| `contact:user.base:readonly` | 用户信息 | 获取用户基础信息 |
 
-Optional permissions:
+可选权限：
 
-| Permission | Scope | Description |
-|------------|-------|-------------|
-| `im:message.group_msg` | Group | Read all group messages |
-| `im:message:readonly` | Read | Get message history |
-| `im:message.reactions:read` | Reactions | View message reactions |
+| 权限 | 范围 | 说明 |
+|------|------|------|
+| `im:message.group_msg` | 群组 | 读取所有群组消息 |
+| `im:message:readonly` | 读取 | 获取消息历史记录 |
+| `im:message.reactions:read` | 表情 | 查看消息表情反应 |
 
-### Step 3: Configure Event Subscriptions
+### 步骤 3：配置事件订阅
 
-Go to **Events & Callbacks** in your app settings:
+在应用设置的 **事件与回调** 中进行配置：
 
-1. **Event configuration method**: Select **Long connection** (recommended)
-2. **Add event subscriptions**:
-   - `im.message.receive_v1` - Receive messages (required)
-   - `im.message.message_read_v1` - Message read receipts
-   - `im.chat.member.bot.added_v1` - Bot added to group
-   - `im.chat.member.bot.deleted_v1` - Bot removed from group
-3. Submit for approval if needed
+1. **事件配置方式**：选择 **长连接**（推荐）
+2. **添加事件订阅**：
+   - `im.message.receive_v1` - 接收消息（必需）
+   - `im.message.message_read_v1` - 消息已读回执
+   - `im.chat.member.bot.added_v1` - 机器人被添加到群组
+   - `im.chat.member.bot.deleted_v1` - 机器人被移出群组
+3. 如有需要，提交审核
 
-### Step 4: Configure OpenClaw
+### 步骤 4：配置 OpenClaw
 
-Add to your OpenClaw configuration (`~/.openclaw/openclaw.json`):
+在 OpenClaw 配置文件（`~/.openclaw/openclaw.json`）中添加：
 
 ```json
 {
@@ -133,92 +133,92 @@ Add to your OpenClaw configuration (`~/.openclaw/openclaw.json`):
 }
 ```
 
-Or use the CLI:
+或使用 CLI 配置：
 
 ```bash
 openclaw configure --section channels
 ```
 
-## Configuration Options
+## 配置选项
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `enabled` | boolean | `true` | Enable the channel |
-| `appId` | string | - | Feishu App ID |
-| `appSecret` | string | - | Feishu App Secret |
-| `domain` | `"feishu"` \| `"lark"` | `"feishu"` | Domain for China or International |
-| `connectionMode` | `"websocket"` \| `"webhook"` | `"websocket"` | Connection mode |
-| `dmPolicy` | `"pairing"` \| `"open"` \| `"allowlist"` | `"pairing"` | DM policy |
-| `groupPolicy` | `"open"` \| `"allowlist"` \| `"disabled"` | `"allowlist"` | Group chat policy |
-| `requireMention` | boolean | `true` | Require @mention in groups |
-| `mediaMaxMb` | number | `30` | Max media file size in MB |
-| `renderMode` | `"auto"` \| `"raw"` \| `"card"` | `"auto"` | Reply render mode |
+| 选项 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `enabled` | boolean | `true` | 启用该渠道 |
+| `appId` | string | - | 飞书 App ID |
+| `appSecret` | string | - | 飞书 App Secret |
+| `domain` | `"feishu"` \| `"lark"` | `"feishu"` | 选择国内（feishu）或国际版（lark）域名 |
+| `connectionMode` | `"websocket"` \| `"webhook"` | `"websocket"` | 连接模式 |
+| `dmPolicy` | `"pairing"` \| `"open"` \| `"allowlist"` | `"pairing"` | 私聊策略 |
+| `groupPolicy` | `"open"` \| `"allowlist"` \| `"disabled"` | `"allowlist"` | 群聊策略 |
+| `requireMention` | boolean | `true` | 群聊中是否需要 @提及 |
+| `mediaMaxMb` | number | `30` | 媒体文件最大大小（MB） |
+| `renderMode` | `"auto"` \| `"raw"` \| `"card"` | `"auto"` | 回复渲染模式 |
 
-### Render Modes
+### 渲染模式
 
-- **`auto`** (default): Automatically detect and use card mode for messages with code blocks or tables
-- **`raw`**: Always send plain text, markdown tables converted to ASCII
-- **`card`**: Always use interactive cards with full markdown rendering
+- **`auto`**（默认）：自动检测含代码块或表格的消息并使用卡片模式
+- **`raw`**：始终发送纯文本，Markdown 表格转换为 ASCII 格式
+- **`card`**：始终使用支持完整 Markdown 渲染的交互式卡片
 
-## Usage
+## 使用方法
 
-### Start the Bot
+### 启动机器人
 
 ```bash
-# Restart OpenClaw gateway after configuration
+# 配置完成后重启 OpenClaw 网关
 openclaw gateway restart
 ```
 
-### Find the Bot
+### 查找机器人
 
-1. Ensure your app is published (at least to test version)
-2. Search for the bot name in Feishu search box
-3. Check if your account is in the app's availability scope
+1. 确保应用已发布（至少为测试版本）
+2. 在飞书搜索框中搜索机器人名称
+3. 检查您的账号是否在应用的可见范围内
 
-### Commands
+### 命令
 
-- `/new` - Start a new conversation
+- `/new` - 开启新对话
 
-## Troubleshooting
+## 故障排查
 
-### Bot cannot receive messages
+### 机器人无法接收消息
 
-- ✅ Check if event subscriptions are configured
-- ✅ Ensure event configuration is set to "Long connection"
-- ✅ Verify `im.message.receive_v1` event is added
-- ✅ Check if all permissions are approved
+- ✅ 检查事件订阅是否已配置
+- ✅ 确认事件配置方式为“长连接”
+- ✅ 验证是否已添加 `im.message.receive_v1` 事件
+- ✅ 检查所有权限是否已获批
 
-### 403 error when sending messages
+### 发送消息时出现 403 错误
 
-- ✅ Ensure `im:message:send_as_bot` permission is approved
+- ✅ 确保 `im:message:send_as_bot` 权限已获批
 
-### Cannot find the bot in Feishu
+### 在飞书中找不到机器人
 
-- ✅ Ensure the app is published (at least to test version)
-- ✅ Search for the bot name in Feishu search box
-- ✅ Check if your account is in the app's availability scope
+- ✅ 确保应用已发布（至少为测试版本）
+- ✅ 在飞书搜索框中搜索机器人名称
+- ✅ 检查您的账号是否在应用的可见范围内
 
-## Development
+## 开发
 
 ```bash
-# Install dependencies
-npm installnpm run build
+# 安装依赖
+npm install
 
+# 构建
+npm run build
 
-
-# Build
-# Watch mode
+# 监听模式
 npm run dev
 ```
 
-## License
+## 许可证
 
-MIT License - see [LICENSE](LICENSE) for details.
+MIT 许可证 - 详情见 [LICENSE](LICENSE)。
 
-## Contributing
+## 贡献
 
-Pull requests are welcome! Please read our contributing guidelines before submitting PRs.
+欢迎提交 Pull Request！提交前请阅读我们的贡献指南。
 
-## Credits
+## 致谢
 
-This plugin is inspired by [clawdbot-feishu](https://github.com/m1heng/clawdbot-feishu) and adapted for OpenClaw.
+本插件受 [clawdbot-feishu](https://github.com/m1heng/clawdbot-feishu) 启发，并针对 OpenClaw 进行了适配开发。
